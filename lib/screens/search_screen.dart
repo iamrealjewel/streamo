@@ -128,9 +128,11 @@ class _SearchScreenState extends State<SearchScreen> {
                     },
                   )
                 : null,
+            filled: false,
             border: InputBorder.none,
             enabledBorder: InputBorder.none,
             focusedBorder: InputBorder.none,
+            disabledBorder: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
           ),
         ),
