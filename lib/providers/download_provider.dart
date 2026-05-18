@@ -348,6 +348,8 @@ class DownloadProvider extends ChangeNotifier {
       dir = await getTemporaryDirectory();
     } else if (Platform.isAndroid) {
       dir = Directory('/storage/emulated/0/Download/Streamo');
+    } else if (Platform.isIOS) {
+      dir = await getApplicationDocumentsDirectory();
     } else if (Platform.isWindows) {
       final downloads = await getDownloadsDirectory();
       dir = Directory(p.join(downloads!.path, 'YtMp3'));
