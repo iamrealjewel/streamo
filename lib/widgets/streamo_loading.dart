@@ -21,11 +21,11 @@ class StreamoLoading extends StatelessWidget {
         children: [
           // Circular progress start ring
           SizedBox(
-            width: size + 16,
-            height: size + 16,
+            width: size * 1.48,
+            height: size * 1.48,
             child: CircularProgressIndicator(
               valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFF0050)),
-              strokeWidth: 2,
+              strokeWidth: size > 40 ? 3.0 : 1.8,
               backgroundColor: const Color(0xFFFF6B00).withOpacity(0.12),
             ),
           )
