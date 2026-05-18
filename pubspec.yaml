@@ -1,0 +1,60 @@
+name: streamo
+description: "Streamo - Ultimate HD Media Downloader"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # YouTube data extraction
+  youtube_explode_dart: ^3.0.5
+
+  # HTTP client for downloading
+  dio: ^5.8.0+1
+
+  # File system & paths
+  path_provider: ^2.1.5
+  path: ^1.9.1
+
+  # Permissions (Android/iOS)
+  permission_handler: ^11.4.0
+
+  # FFmpeg for video/audio conversion
+  ffmpeg_kit_flutter_new: ^4.1.0
+
+  # Open downloaded files
+  open_file: ^3.5.10
+
+  # Share files
+  share_plus: ^10.1.4
+
+  # URL launcher
+  url_launcher: ^6.3.1
+
+  # State management
+  provider: ^6.1.2
+
+  # Local storage
+  shared_preferences: ^2.3.5
+
+  # UI helpers
+  cached_network_image: ^3.4.1
+  shimmer: ^3.0.0
+  flutter_animate: ^4.5.2
+  google_fonts: ^6.2.1
+  lottie: ^3.3.1
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/

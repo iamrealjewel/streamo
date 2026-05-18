@@ -1,0 +1,54 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate.json
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains editor specific settings, and should not be uploaded
+# to git unless workspace settings are needed.
+.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.flutter-plugins
+**/ios/Flutter/.flutter-plugins-dependencies
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/App.framework
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+
+# Android related
+**/android/local.properties
+**/android/key.properties
+**/android/app/signing-key.password
+**/android/app/signing-key.jks
+**/android/app/signing-key.properties
+*.keystore
+*.jks
+
+# Symbolicated crash logs
+*.cpuprofile
+
+# Coverage
+coverage/
