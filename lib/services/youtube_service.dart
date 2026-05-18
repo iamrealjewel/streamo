@@ -6,7 +6,14 @@ class YoutubeService {
     final ytClient = yt.YoutubeExplode();
     try {
       final video = await ytClient.videos.get(url);
-      final manifest = await ytClient.videos.streamsClient.getManifest(video.id);
+      final manifest = await ytClient.videos.streamsClient.getManifest(
+        video.id,
+        ytClients: [
+          yt.YoutubeApiClient.tv,
+          yt.YoutubeApiClient.ios,
+          yt.YoutubeApiClient.androidVr,
+        ],
+      );
 
       // Collect video formats (muxed + video-only)
       final videoFormats = <VideoFormat>[];
