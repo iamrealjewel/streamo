@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit_config.dart';
 import 'package:ffmpeg_kit_flutter_new/return_code.dart';
@@ -15,6 +16,14 @@ class DownloadService {
     required void Function(double) onProgress,
   }) async {
     final ytClient = yt.YoutubeExplode();
+    final dio = Dio(BaseOptions(
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 15),
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://www.youtube.com/',
+      },
+    ));
     try {
       final manifest = await ytClient.videos.streamsClient.getManifest(yt.VideoId(videoInfo.id));
 
@@ -29,21 +38,12 @@ class DownloadService {
         }
         targetStream ??= manifest.muxed.firstWhere((s) => s.videoQuality.name == format.qualityLabel, orElse: () => manifest.muxed.first);
 
-        final stream = ytClient.videos.streamsClient.get(targetStream);
-        final file = File(savePath);
-        final sink = file.openWrite();
-        final totalBytes = targetStream.size.totalBytes;
-        int receivedBytes = 0;
-
-        await for (final chunk in stream) {
-          sink.add(chunk);
-          receivedBytes += chunk.length;
-          if (totalBytes > 0) {
-            onProgress(receivedBytes / totalBytes);
-          }
-        }
-        await sink.flush();
-        await sink.close();
+        await _downloadWithRetry(
+          dio: dio,
+          url: targetStream.url.toString(),
+          savePath: savePath,
+          onProgress: onProgress,
+        );
       } else {
         // Video-only: download video + best audio, then merge with FFmpeg
         final bestAudio = manifest.audioOnly.toList()
@@ -64,40 +64,22 @@ class DownloadService {
         targetStream ??= manifest.videoOnly.firstWhere((s) => s.videoQuality.name == format.qualityLabel, orElse: () => manifest.videoOnly.first);
 
         // Download video
-        final videoFile = File(videoTemp);
-        final videoSink = videoFile.openWrite();
-        final videoStream = ytClient.videos.streamsClient.get(targetStream);
-        final videoTotalBytes = targetStream.size.totalBytes;
-        int videoReceivedBytes = 0;
-
-        await for (final chunk in videoStream) {
-          videoSink.add(chunk);
-          videoReceivedBytes += chunk.length;
-          if (videoTotalBytes > 0) {
-            onProgress((videoReceivedBytes / videoTotalBytes) * 0.45);
-          }
-        }
-        await videoSink.flush();
-        await videoSink.close();
+        await _downloadWithRetry(
+          dio: dio,
+          url: targetStream.url.toString(),
+          savePath: videoTemp,
+          onProgress: (p) => onProgress(p * 0.45),
+        );
 
         // Download audio
         if (bestAudio.isNotEmpty) {
-          final audioFile = File(audioTemp);
-          final audioSink = audioFile.openWrite();
           final audioStreamInfo = bestAudio.first;
-          final audioStream = ytClient.videos.streamsClient.get(audioStreamInfo);
-          final audioTotalBytes = audioStreamInfo.size.totalBytes;
-          int audioReceivedBytes = 0;
-
-          await for (final chunk in audioStream) {
-            audioSink.add(chunk);
-            audioReceivedBytes += chunk.length;
-            if (audioTotalBytes > 0) {
-              onProgress(0.45 + (audioReceivedBytes / audioTotalBytes) * 0.25);
-            }
-          }
-          await audioSink.flush();
-          await audioSink.close();
+          await _downloadWithRetry(
+            dio: dio,
+            url: audioStreamInfo.url.toString(),
+            savePath: audioTemp,
+            onProgress: (p) => onProgress(0.45 + p * 0.25),
+          );
         }
 
         onProgress(0.7);
@@ -126,6 +108,14 @@ class DownloadService {
     required void Function(double) onProgress,
   }) async {
     final ytClient = yt.YoutubeExplode();
+    final dio = Dio(BaseOptions(
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 15),
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://www.youtube.com/',
+      },
+    ));
     try {
       final manifest = await ytClient.videos.streamsClient.getManifest(yt.VideoId(videoInfo.id));
       final audioStreams = manifest.audioOnly.toList()
@@ -137,21 +127,12 @@ class DownloadService {
       }
 
       final targetStream = audioStreams.first;
-      final stream = ytClient.videos.streamsClient.get(targetStream);
-      final file = File(savePath);
-      final sink = file.openWrite();
-      final totalBytes = targetStream.size.totalBytes;
-      int receivedBytes = 0;
-
-      await for (final chunk in stream) {
-        sink.add(chunk);
-        receivedBytes += chunk.length;
-        if (totalBytes > 0) {
-          onProgress(receivedBytes / totalBytes);
-        }
-      }
-      await sink.flush();
-      await sink.close();
+      await _downloadWithRetry(
+        dio: dio,
+        url: targetStream.url.toString(),
+        savePath: savePath,
+        onProgress: onProgress,
+      );
     } finally {
       ytClient.close();
     }
@@ -170,6 +151,73 @@ class DownloadService {
   }
 
   // ─── Private Helpers ────────────────────────────────────────────────────────
+
+  /// Custom chunk downloader with resume support via HTTP Range header.
+  static Future<void> _downloadWithRetry({
+    required Dio dio,
+    required String url,
+    required String savePath,
+    required void Function(double) onProgress,
+  }) async {
+    final file = File(savePath);
+    if (await file.exists()) {
+      await file.delete();
+    }
+
+    int downloaded = 0;
+    int totalBytes = -1;
+    int attempt = 0;
+    const maxAttempts = 5;
+
+    while (attempt < maxAttempts) {
+      try {
+        if (totalBytes > 0 && downloaded >= totalBytes) {
+          return;
+        }
+
+        final options = Options(
+          responseType: ResponseType.stream,
+          headers: {
+            if (downloaded > 0) 'Range': 'bytes=$downloaded-',
+          },
+        );
+
+        final response = await dio.get<ResponseBody>(url, options: options);
+        
+        if (totalBytes == -1) {
+          final contentLength = response.headers.value('content-length');
+          if (contentLength != null) {
+            totalBytes = downloaded + int.parse(contentLength);
+          }
+        }
+
+        final fileSink = await file.open(mode: FileMode.writeOnlyAppend);
+        final stream = response.data!.stream;
+
+        try {
+          await for (final chunk in stream) {
+            await fileSink.writeFrom(chunk);
+            downloaded += chunk.length;
+            if (totalBytes > 0) {
+              onProgress(downloaded / totalBytes);
+            }
+          }
+          await fileSink.close();
+          return; // Success!
+        } catch (e) {
+          await fileSink.close();
+          rethrow;
+        }
+      } catch (e) {
+        attempt++;
+        print('DEBUG: Download attempt $attempt failed with error: $e. Retrying in 1s...');
+        if (attempt >= maxAttempts) {
+          rethrow;
+        }
+        await Future.delayed(const Duration(seconds: 1));
+      }
+    }
+  }
 
   static Future<void> _runFFmpeg(
     String command, {
