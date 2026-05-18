@@ -16,6 +16,12 @@ class _UrlInputSectionState extends State<UrlInputSection> {
   final _focusNode = FocusNode();
 
   @override
+  void initState() {
+    super.initState();
+    _controller.text = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     _focusNode.dispose();
@@ -32,7 +38,11 @@ class _UrlInputSectionState extends State<UrlInputSection> {
 
   void _submit() {
     final url = _controller.text.trim();
-    if (url.isEmpty) return;
+    print('DEBUG: _submit called with URL: "$url"');
+    if (url.isEmpty) {
+      print('DEBUG: URL is empty, returning.');
+      return;
+    }
     context.read<DownloadProvider>().fetchVideoInfo(url);
     _focusNode.unfocus();
   }

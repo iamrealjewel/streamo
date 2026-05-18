@@ -72,16 +72,22 @@ class DownloadProvider extends ChangeNotifier {
   // ─── Single Item Downloader ────────────────────────────────────────────────
 
   Future<void> fetchVideoInfo(String url) async {
+    print('DEBUG: fetchVideoInfo started for URL: "$url"');
     _isFetchingInfo = true;
     _fetchError = null;
     _currentVideoInfo = null;
     notifyListeners();
 
     try {
+      print('DEBUG: calling YoutubeService.getVideoInfo...');
       _currentVideoInfo = await YoutubeService.getVideoInfo(url);
-    } catch (e) {
+      print('DEBUG: YoutubeService.getVideoInfo success! Title: "${_currentVideoInfo?.title}"');
+    } catch (e, stack) {
+      print('DEBUG: YoutubeService.getVideoInfo failed with error: $e');
+      print('DEBUG: Stack trace: $stack');
       _fetchError = e.toString().replaceFirst('Exception: ', '');
     } finally {
+      print('DEBUG: fetchVideoInfo completed. isFetchingInfo = false');
       _isFetchingInfo = false;
       notifyListeners();
     }

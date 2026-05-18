@@ -175,9 +175,13 @@ class DownloadService {
     String command, {
     required void Function(double) onProgress,
   }) async {
+    print('DEBUG: FFmpeg executing command: ffmpeg $command');
     FFmpegKitConfig.enableStatisticsCallback((stats) {
-      // FFmpeg reports time processed; estimate progress
       final time = stats.getTime();
+      final size = stats.getSize();
+      final bitrate = stats.getBitrate();
+      final speed = stats.getSpeed();
+      print('DEBUG: FFmpeg stats -> time: ${time}ms, size: ${size}bytes, bitrate: ${bitrate}kbps, speed: ${speed}x');
       if (time > 0) {
         onProgress((time / 1000.0).clamp(0.0, 1.0));
       }
@@ -185,12 +189,18 @@ class DownloadService {
 
     final session = await FFmpegKit.execute(command);
     final returnCode = await session.getReturnCode();
+    print('DEBUG: FFmpeg session finished with return code: $returnCode');
 
     if (!ReturnCode.isSuccess(returnCode)) {
       final logs = await session.getOutput();
+      final failStackTrace = await session.getFailStackTrace();
+      print('DEBUG: FFmpeg execution FAILED!');
+      print('DEBUG: FFmpeg logs: $logs');
+      print('DEBUG: FFmpeg stack trace: $failStackTrace');
       throw Exception('FFmpeg conversion failed: $logs');
     }
 
+    print('DEBUG: FFmpeg execution SUCCEEDED!');
     onProgress(1.0);
   }
 
