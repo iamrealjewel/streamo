@@ -1,8 +1,9 @@
-# Uncomment this line to define a global platform for your project
+# Set the platform to iOS 13.0
 platform :ios, '13.0'
 
-# CocoaPods analytics sends usage stats. Uncomment the line below to disable sending stats.
-# disable_cocoapods_analytics!
+# Resolve the Flutter SDK root and load the podhelper script
+flutter_root = File.expand_path(ENV['FLUTTER_ROOT'] || '../../..')
+require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
 
 target 'Runner' do
   use_frameworks!
