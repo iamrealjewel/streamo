@@ -63,5 +63,5 @@ flutter:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/Streamo.png"
+  image_path: "assets/Streamo_solid.png"
   remove_alpha_ios: true
