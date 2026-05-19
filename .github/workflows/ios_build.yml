@@ -41,11 +41,13 @@ jobs:
       - name: Build iOS App Bundle
         run: flutter build ios --release --no-codesign
 
-      # 6. Package compiled Runner.app into standard .ipa archive (preserving symlinks)
+      # 6. Package compiled Runner.app into standard .ipa archive (purging all partial signatures)
       - name: Package IPA
         run: |
           mkdir Payload
           mv build/ios/iphoneos/Runner.app Payload/
+          find Payload/Runner.app -name "_CodeSignature" -exec rm -rf {} +
+          find Payload/Runner.app -name "embedded.mobileprovision" -exec rm -rf {} +
           zip -r -y app-release.ipa Payload
 
       # 7. Upload the compiled .ipa artifact
